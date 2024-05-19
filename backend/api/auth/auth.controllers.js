@@ -114,7 +114,50 @@ exports.login = async (req, res) => {
 //       res.status(500).json({ message: "Erreur lors de la réinitialisation de mot de passe." });
 //   }
 // };
+//nnn
+router.post("/forgot-passwordd", async (req, res) => {
+  const { email } = req.body;
 
+  try {
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).send({ msg: "User not found" });
+    }
+
+    // Generate a unique reset token
+    const resetToken = jwt.sign({ userId: user._id }, "your_secret_key", {
+      expiresIn: "1h",
+    });
+
+    // Update user's reset token and expiration time
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    const mailOptions = {
+      from: "brahmiwiem359@gmail.com",
+      to: email,
+      subject: "Reset Password",
+
+      html: `
+      <p>Bonjour ${user.name},</p>
+                    <p>Vous avez demandé une réinitialisation de mot de passe.</p>
+                    <p>Cliquez sur le lien suivant pour réinitialiser votre mot de passe :</p>
+                    <a href="http://localhost:3001/user/reset-password/${resetToken}">Réinitialiser le mot de passe</a>
+                    <p>Ce lien expirera dans 1 heure.</p>
+>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.send({ msg: "Password reset email sent" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ msg: "Internal server error" });
+  }
+});
+///nnn
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
